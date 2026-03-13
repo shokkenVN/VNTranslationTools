@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using VNTextPatch.Shared;
 using VNTextPatch.Shared.Scripts;
+using VNTextPatch.Shared.Scripts.Kirikiri;
 using VNTextPatch.Shared.Util;
 
 namespace VNTextPatch
@@ -15,6 +17,7 @@ namespace VNTextPatch
         public static void Main(string[] args)
         {
             Options options = Options.Parse(args, out args);
+            KirikiriScnScript.LanguageIndex = options.KirikiriLanguageIndex;
             if (args.Length == 0)
             {
                 PrintUsage();
@@ -274,6 +277,10 @@ namespace VNTextPatch
             Console.WriteLine($"    {assemblyName} extractlocal infile|infolder scriptfile|scriptfolder");
             Console.WriteLine($"    {assemblyName} insertlocal infile|infolder scriptfile|scriptfolder outfile|outfolder");
             Console.WriteLine($"    {assemblyName} insertgdocs infile|infolder spreadsheetId outfile|outfolder");
+            Console.WriteLine();
+            Console.WriteLine("Options:");
+            Console.WriteLine("    --format=<name>");
+            Console.WriteLine("    --kiri-lang=<#>    (For .scn in KrKr and adjacent engines only. default: 0)");
         }
 
         private class Options
@@ -282,22 +289,51 @@ namespace VNTextPatch
             {
                 Options options = new Options();
                 List<string> unnamedArgsList = new List<string>();
-                foreach (string arg in args)
+                for (int i = 0; i < args.Length; i++)
                 {
-                    Match match = Regex.Match(arg, @"--(?<name>\w+)=(?<value>.*)$");
-                    if (!match.Success)
+                    string arg = args[i];
+                    if (!arg.StartsWith("--"))
                     {
                         unnamedArgsList.Add(arg);
                         continue;
                     }
 
-                    string name = match.Groups["name"].Value;
-                    string value = match.Groups["value"].Value;
+                    string name;
+                    string value;
+                    Match inlineMatch = Regex.Match(arg, @"^--(?<name>[\w-]+)=(?<value>.*)$");
+                    if (inlineMatch.Success)
+                    {
+                        name = inlineMatch.Groups["name"].Value;
+                        value = inlineMatch.Groups["value"].Value;
+                    }
+                    else
+                    {
+                        name = arg.Substring(2);
+                        bool hasValue = i + 1 < args.Length && !args[i + 1].StartsWith("--");
+                        value = hasValue ? args[++i] : null;
+                    }
+
                     switch (name)
                     {
                         case "format":
+                            if (string.IsNullOrEmpty(value))
+                                throw new ArgumentException("Option --format requires a value");
+
                             options.Format = value;
                             break;
+
+                        case "kiri-lang":
+                            if (string.IsNullOrEmpty(value))
+                                throw new ArgumentException("Option --kiri-lang requires a numeric value");
+
+                            if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int kiriLanguageIndex) || kiriLanguageIndex < 0)
+                                throw new ArgumentException($"Invalid value for --kiri-lang: {value}");
+
+                            options.KirikiriLanguageIndex = kiriLanguageIndex;
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Unknown option: --{name}");
                     }
                 }
 
@@ -306,6 +342,12 @@ namespace VNTextPatch
             }
 
             public string Format
+            {
+                get;
+                private set;
+            }
+
+            public int KirikiriLanguageIndex
             {
                 get;
                 private set;
