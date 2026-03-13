@@ -10,7 +10,7 @@ A tool for extracting original text from, and patching translated text into, a v
 | CatSystem2                           | .cst           |                                                                                |
 | Cyberworks C,system                  | .a0            |                                                                                |
 | KaGuYa                               |  message.dat   |                                                                                |
-| Kirikiri                             |  .ks/.scn/.txt | Append `--format=kirikiriks` to command line for .txt                          |
+| Kirikiri                             |  .ks/.scn/.txt | Append `--format=kirikiriks` to command line for .txt, append `--kiri-lang=#` for multi-language .scn scripts                          |
 | Majiro                               | .mjo           |                                                                                |
 | Musica                               | .sc            |                                                                                |
 | Mware                                | .nut           |                                                                                |
